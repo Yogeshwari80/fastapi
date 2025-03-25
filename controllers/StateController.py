@@ -17,4 +17,3 @@ async def getStates():
         return JSONResponse(status_code=404,content={"message":"No State Found"})
     return [StateOut(**state) for state in states]
     
-    

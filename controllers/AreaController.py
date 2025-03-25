@@ -6,15 +6,16 @@ from bson import ObjectId
 from config.database import area_collection, city_collection
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException,APIRouter
+from typing import List,Optional,Dict
 
 router = APIRouter()
 
 
 async def addArea(area: Area):
-    area_dict = area.model_dump()
-    saved_area = await area_collection.insert_one(area_dict)
+    # area_dict = area.model_dump()
+    saved_area = await area_collection.insert_one(area.dict())
     return JSONResponse(content={"message": "Area added"}, status_code=201)
-
+  
 
 
 async def getAreas():

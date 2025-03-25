@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from controllers.StateController import addState,getStates
 from models.StateModel import State,StateOut
+from typing import List
 
 router = APIRouter()
 
@@ -11,3 +12,5 @@ async def post_state(state:State):
 @router.get("/getStates/")
 async def get_states():
     return await getStates()
+
+
