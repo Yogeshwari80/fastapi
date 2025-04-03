@@ -1,120 +1,77 @@
-from config.database import property_collection  
-from models.PropertyModel import Property, PropertyOut
-from fastapi import APIRouter, HTTPException, UploadFile, File,Form
-from fastapi.responses import JSONResponse
-from bson import ObjectId
-import shutil
 import os
+import shutil
+from fastapi import HTTPException, UploadFile
+from bson import ObjectId
+from models.PropertyModel import Property
+from config.database import property_collection
 from utils.CloudinaryUtil import upload_image
-from typing import List, Optional
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-    
 
-# async def getAllProperties():
-#     properties = await property_collection.find().to_list(100)
-#     print("Properties List: ", properties)
-
-#     for property in properties:
-#         property["_id"] = str(property["_id"])
-    
-#     return [PropertyOut(**property) for property in properties]
-async def getAllProperties():
-    properties = await property_collection.find().to_list(100)
-
-    if not properties:
-        raise HTTPException(status_code=404, detail="No properties found")
-   # print("prope..",properties)
-    for property in properties:
-        property["_id"] = str(property["_id"])  # Convert ObjectId to string
-        property_images = property.get("property_images", [])
-    
-    # Ensure property_images is a list of strings
-        if isinstance(property_images, str):  
-            property_images = [property_images]  # Wrap single string in a list
-        elif isinstance(property_images, list):
-            property_images = ["".join(property_images)] if all(isinstance(i, str) and len(i) == 1 for i in property_images) else property_images  
-
-        property["property_images"] = property_images
-
-
+async def create_property(property_data: Property):
     try:
-        return [PropertyOut(**property) for property in properties]
+        property_data.category_id = ObjectId(property_data.category_id)
+        property_data.state_id = ObjectId(property_data.state_id)
+        property_data.city_id = ObjectId(property_data.city_id)
+        property_data.area_id = ObjectId(property_data.area_id)
+        property_data.user_id = ObjectId(property_data.user_id)
+
+        saved_property = await property_collection.insert_one(property_data.dict())
+        return {"message": "Property created successfully", "property_id": str(saved_property.inserted_id)}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Serialization error: {str(e)}")  # Catch validation errors
-
-
-
-async def addProperty(property: Property):
-    result = await property_collection.insert_one(property.dict())
-    print("Inserted Property ID:", result.inserted_id)
-    return {"message": "Property Created Successfully", "id": str(result.inserted_id)}
-
-
-async def getPropertyById(propertyId: str):
-    property_data = await property_collection.find_one({"_id": ObjectId(propertyId)})
-    if property_data:
-        return PropertyOut(**property_data)
-    return {"message": "Property Not Found"}
-
-
-async def updateProperty(property_id: str, property: Property):
-    result = await property_collection.update_one(
-        {"_id": ObjectId(property_id)},
-        {"$set": property.dict()}
-    )
-    if result.modified_count:
-        return {"message": "Property Updated Successfully"}
-    return {"message": "No Property Found or No Changes Made"}
-
-async def deleteProperty(property_id: str):
-    result = await property_collection.delete_one({"_id": ObjectId(property_id)})
-    if result.deleted_count:
-        return {"message": "Property Deleted Successfully"}
-    return {"message": "No Property Found"}
-
-
-
+        raise HTTPException(status_code=500, detail=f"Error creating property: {str(e)}")
+    
+def validate_object_id(id_value: str):
+    if not id_value or not ObjectId.is_valid(id_value):
+        raise HTTPException(status_code=400, detail=f"Invalid ObjectId: {id_value}")
+    return ObjectId(id_value)
 
 async def create_property_with_file(
-    property_name: str = Form(...),
-    category_id: str = Form(...),
-    listing_type: str = Form(...),
-    base_price: float = Form(...),
-    negotiable: Optional[bool] = Form(None),
-    address: str = Form(...),
-    state_id: str = Form(...),
-    city_id: str = Form(...),
-    area_id: Optional[str] = Form(None),
-    landmarks: Optional[str] = Form(None),
-    maps_link: Optional[str] = Form(None),
-    built_up_area: Optional[float] = Form(None),
-    carpet_area: Optional[float] = Form(None),
-    bedrooms: Optional[int] = Form(None),
-    bathrooms: Optional[int] = Form(None),
-    balconies: Optional[int] = Form(None),
-    furnishing: Optional[str] = Form(None),
-    age_of_property: Optional[int] = Form(None),
-    floor_no: Optional[int] = Form(None),
-    total_floors: Optional[int] = Form(None),
-    facing: Optional[str] = Form(None),
-    parking_slots: Optional[int] = Form(None),
-    # amenities: Optional[List[str]] = Form(None),
-    image: UploadFile = File(...)
+    property_name: str,
+    category_id: str,
+    listing_type: str,
+    base_price: float,
+    negotiable: bool,
+    address: str,
+    state_id: str,
+    city_id: str,
+    area_id: str,
+    user_id: str,
+    landmarks: str,
+    maps_link: str,
+    built_up_area: float,
+    carpet_area: float,
+    bedrooms: int,
+    bathrooms: int,
+    balconies: int,
+    furnishing: str,
+    age_of_property: int,
+    facing: str,
+    floor_no: int,
+    total_floors: int,
+    parking_slots: int,
+    image: UploadFile
 ):
+    # try:
+    #     file_ext = image.filename.split(".")[-1]
+    #     file_path = os.path.join(UPLOAD_DIR, f"{ObjectId()}.{file_ext}")
+
+    #     with open(file_path, "wb") as buffer:
+    #         shutil.copyfileobj(image.file, buffer)
+
+    #     image_url = await upload_image(file_path)
     try:
-        
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        # Validate ObjectIds Before Conversion
+        category_id = validate_object_id(category_id)
+        state_id = validate_object_id(state_id)
+        city_id = validate_object_id(city_id)
+        area_id = validate_object_id(area_id)
+        user_id = validate_object_id(user_id)
 
-        file_ext = image.filename.split(".")[-1]  
-        file_path = os.path.join(UPLOAD_DIR, f"{ObjectId()}.{file_ext}") 
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
+        # File Handling Code Here...
+        image_url = await upload_image(image.file)
 
-        
-        image_url = await upload_image(file_path)
-        print(property_name, category_id, listing_type, base_price, negotiable, address, state_id, city_id, area_id, landmarks, maps_link, built_up_area, carpet_area, bedrooms, bathrooms, balconies, furnishing, age_of_property, floor_no, total_floors, facing, parking_slots, image_url)
         property_data = {
             "property_name": property_name,
             "category_id": str(ObjectId(category_id)),
@@ -124,7 +81,8 @@ async def create_property_with_file(
             "address": address,
             "state_id": str(ObjectId(state_id)),
             "city_id": str(ObjectId(city_id)),
-            "area_id": area_id,
+            "area_id": str(ObjectId(area_id)),
+            "user_id": str(ObjectId(user_id)),
             "landmarks": landmarks,
             "maps_link": maps_link,
             "built_up_area": built_up_area,
@@ -134,17 +92,52 @@ async def create_property_with_file(
             "balconies": balconies,
             "furnishing": furnishing,
             "age_of_property": age_of_property,
+            "facing": facing,
             "floor_no": floor_no,
             "total_floors": total_floors,
-            "facing": facing,
             "parking_slots": parking_slots,
-            # "amenities": amenities,
-            "property_images": [image_url]  
+            "image_url": image_url
         }
-        print(property_data)
-        inserted_property = await property_collection.insert_one(property_data)
 
-        return JSONResponse(content={"message": "Property created successfully", "id": str(inserted_property.inserted_id)}, status_code=201)
+        inserted_property = await property_collection.insert_one(property_data)
+        return {"message": "Property created successfully", "property_id": str(inserted_property.inserted_id)}
     except Exception as e:
-        print(e)
-        print(f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+async def get_properties():
+    properties = await property_collection.find().to_list(None)
+    
+    for prop in properties:
+        prop["_id"] = str(prop["_id"])
+        prop["category_id"] = str(prop["category_id"])
+        prop["state_id"] = str(prop["state_id"])
+        prop["city_id"] = str(prop["city_id"])
+        prop["area_id"] = str(prop["area_id"])
+        prop["user_id"] = str(prop["user_id"])
+    
+    return properties
+
+
+# Update Property API
+async def update_property(property_id: str, update_data: dict):
+    if not ObjectId.is_valid(property_id):
+        raise HTTPException(status_code=400, detail="Invalid property ID")
+
+    update_query = {"$set": update_data}
+    result = await property_collection.update_one({"_id": ObjectId(property_id)}, update_query)
+
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    return {"message": "Property updated successfully"}
+
+async def delete_property(property_id: str):
+    if not ObjectId.is_valid(property_id):
+        raise HTTPException(status_code=400, detail="Invalid property ID")
+
+    result = await property_collection.delete_one({"_id": ObjectId(property_id)})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    return {"message": "Property deleted successfully"}
