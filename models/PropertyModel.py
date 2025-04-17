@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from bson import ObjectId
 from fastapi import File, UploadFile
 
+
 class Property(BaseModel):
     property_name: Optional[str]
     category_id: Optional[str]
@@ -27,8 +28,11 @@ class Property(BaseModel):
     floor_no: Optional[int]
     total_floors: Optional[int]
     parking_slots: Optional[int]
-    image_url: Optional[str] = None  # Cloudinary/Image Path
-    image: UploadFile = File(...)  # File Upload
+    image_url: Optional[str] = None
+    image: UploadFile = File(...)  
+
+   
+
 
 class PropertyOut(BaseModel):
     id: str = Field(alias="_id")
@@ -60,8 +64,13 @@ class PropertyOut(BaseModel):
     user: Optional[Dict[str, Any]] = None
     area: Optional[Dict[str, Any]] = None
 
+
+    
+
+
     @validator("id", "category_id", "state_id", "city_id", "area_id", "user_id", pre=True, always=True)
     def convert_objectid(cls, v):
         if isinstance(v, ObjectId):
             return str(v)
         return v
+    

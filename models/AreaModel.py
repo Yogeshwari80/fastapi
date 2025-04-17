@@ -5,7 +5,7 @@ from bson import ObjectId
 
 class Area(BaseModel):
     name: str
-    city_id: Optional[str]  # Ensure city_id is a string
+    city_id: Optional[str]  
 
 class AreaOut(Area):
     id: str = Field(alias="_id")
@@ -16,6 +16,7 @@ class AreaOut(Area):
         """ Convert ObjectId to string for MongoDB _id """
         if isinstance(v, ObjectId):
             return str(v)
+        
         return v
 
     @validator("city_id", pre=True, always=True)
@@ -31,3 +32,5 @@ class AreaOut(Area):
         if isinstance(v, dict) and "_id" in v:
             v["_id"] = str(v["_id"])
         return v
+
+    

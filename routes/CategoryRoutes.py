@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from controllers import CategoryController  # Import Category Controller
+from controllers import CategoryController  
 from models.CategoryModel import Category, CategoryOut
 
 router = APIRouter()

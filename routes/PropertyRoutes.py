@@ -2,6 +2,7 @@ from fastapi import APIRouter, Form, UploadFile, File
 from controllers import PropertyController
 from models.PropertyModel import Property
 
+
 router = APIRouter()
 
 @router.post("/create_property")
@@ -53,3 +54,7 @@ async def update_property(property_id: str, update_data: dict):
 @router.delete("/delete_property/{property_id}")
 async def delete_property(property_id: str):
     return await PropertyController.delete_property(property_id)
+
+@router.get("/property/{property_id}")
+async def single_property_route(property_id: str):
+    return await PropertyController.get_single_property(property_id)

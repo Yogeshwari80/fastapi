@@ -27,4 +27,3 @@ def send_mail(to_email:str,subject:str,text:str):
     
     return {"message":"Mail sent successfully"}
 
-#send_mail("samir.vithlani83955@gmail.com","Test Mail","This is a test mail from fast...")

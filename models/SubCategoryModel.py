@@ -10,7 +10,7 @@ class SubCategory(BaseModel):
 
 class SubCategoryOut(SubCategory):
     id:str = Field(alias='_id') 
-    category_id: Optional[Dict[str,Any]] = None #{_id:"",name,desc,cate_id:{_id:"",name,desc}}
+    category_id: Optional[Dict[str,Any]] = None 
     
     @validator('id', pre=True, always=True)
     def convert_obectId(cls,v):

@@ -7,11 +7,7 @@ class State(BaseModel):
     
 class StateOut(State):
     id:str = Field(alias="_id")
-# class StateOut(State):
-#     id: str = Field(alias="_id")
 
-#     class Config:
-#         from_attributes = True  # ✅ NEW (Pydantic v2)
 
     
     @validator("id",pre=True,always=True)

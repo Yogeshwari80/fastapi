@@ -6,8 +6,8 @@ router = APIRouter()
 
 @router.get("/roles/")
 async def get_roles():
-    return await getAllRoles() #promise
-#{name:"",descr:""}
+    return await getAllRoles() 
+
 
 @router.post("/role/")
 async def post_role(role:Role):

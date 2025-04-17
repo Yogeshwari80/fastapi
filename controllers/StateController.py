@@ -12,7 +12,7 @@ async def addState(state:State):
 
 async def getStates():
     states = await state_collection.find().to_list()
-    #check lennght of states
+
     if len(states)==0:
         return JSONResponse(status_code=404,content={"message":"No State Found"})
     return [StateOut(**state) for state in states]

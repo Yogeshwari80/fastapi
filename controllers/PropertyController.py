@@ -2,12 +2,25 @@ import os
 import shutil
 from fastapi import HTTPException, UploadFile
 from bson import ObjectId
-from models.PropertyModel import Property
-from config.database import property_collection
+from models.PropertyModel import Property,PropertyOut
+from config.database import property_collection, category_collection, area_collection, city_collection, state_collection, user_collection
 from utils.CloudinaryUtil import upload_image
+
+
+
+
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def convert_objectid(obj):
+    if isinstance(obj, list):
+        return [convert_objectid(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_objectid(value) for key, value in obj.items()}
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    return obj
 
 async def create_property(property_data: Property):
     try:
@@ -16,6 +29,8 @@ async def create_property(property_data: Property):
         property_data.city_id = ObjectId(property_data.city_id)
         property_data.area_id = ObjectId(property_data.area_id)
         property_data.user_id = ObjectId(property_data.user_id)
+        
+
 
         saved_property = await property_collection.insert_one(property_data.dict())
         return {"message": "Property created successfully", "property_id": str(saved_property.inserted_id)}
@@ -53,23 +68,16 @@ async def create_property_with_file(
     parking_slots: int,
     image: UploadFile
 ):
-    # try:
-    #     file_ext = image.filename.split(".")[-1]
-    #     file_path = os.path.join(UPLOAD_DIR, f"{ObjectId()}.{file_ext}")
 
-    #     with open(file_path, "wb") as buffer:
-    #         shutil.copyfileobj(image.file, buffer)
-
-    #     image_url = await upload_image(file_path)
     try:
-        # Validate ObjectIds Before Conversion
+       
         category_id = validate_object_id(category_id)
         state_id = validate_object_id(state_id)
         city_id = validate_object_id(city_id)
         area_id = validate_object_id(area_id)
         user_id = validate_object_id(user_id)
 
-        # File Handling Code Here...
+       
         image_url = await upload_image(image.file)
 
         property_data = {
@@ -130,7 +138,7 @@ async def update_property(property_id: str, update_data: dict):
         raise HTTPException(status_code=404, detail="Property not found")
 
     return {"message": "Property updated successfully"}
-
+# delete Property API
 async def delete_property(property_id: str):
     if not ObjectId.is_valid(property_id):
         raise HTTPException(status_code=400, detail="Invalid property ID")
@@ -141,3 +149,69 @@ async def delete_property(property_id: str):
         raise HTTPException(status_code=404, detail="Property not found")
 
     return {"message": "Property deleted successfully"}
+
+#singleproperty API
+
+# async def get_single_property(property_id: str):
+#     try:
+#         if not ObjectId.is_valid(property_id):
+#             raise HTTPException(status_code=400, detail="Invalid Property ID")
+
+#         # Fetch the property by ID
+#         property_data = await property_collection.find_one({"_id": ObjectId(property_id)})
+
+#         if not property_data:
+#             raise HTTPException(status_code=404, detail="Property not found")
+
+#         # Populate referenced fields manually
+#         category = await category_collection.find_one({"_id": property_data.get("categoryId")})
+#         area = await area_collection.find_one({"_id": property_data.get("areaId")})
+#         city = await city_collection.find_one({"_id": property_data.get("cityId")})
+#         state = await state_collection.find_one({"_id": property_data.get("stateId")})
+#         user = await user_collection.find_one({"_id": property_data.get("userId")})
+
+#         property_data["category"] = category
+#         property_data["area"] = area
+#         property_data["city"] = city
+#         property_data["state"] = state
+#         property_data["user"] = user
+
+#         return {
+#             "message": "Single Property Fetched Successfully!",
+#             "data": convert_objectid(property_data)
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+async def get_single_property(property_id: str):
+    try:
+        if not ObjectId.is_valid(property_id):
+            raise HTTPException(status_code=400, detail="Invalid Property ID")
+
+        # Fetch the property by ID
+        property_data = await property_collection.find_one({"_id": ObjectId(property_id)})
+
+        if not property_data:
+            raise HTTPException(status_code=404, detail="Property not found")
+
+        # Populate referenced fields manually with correct keys and ObjectId conversion
+        category = await category_collection.find_one({"_id": ObjectId(property_data.get("category_id"))}) if property_data.get("category_id") else None
+        area = await area_collection.find_one({"_id": ObjectId(property_data.get("area_id"))}) if property_data.get("area_id") else None
+        city = await city_collection.find_one({"_id": ObjectId(property_data.get("city_id"))}) if property_data.get("city_id") else None
+        state = await state_collection.find_one({"_id": ObjectId(property_data.get("state_id"))}) if property_data.get("state_id") else None
+        user = await user_collection.find_one({"_id": ObjectId(property_data.get("user_id"))}) if property_data.get("user_id") else None
+
+        # Add populated data
+        property_data["category"] = category
+        property_data["area"] = area
+        property_data["city"] = city
+        property_data["state"] = state
+        property_data["user"] = user
+
+        return {
+            "message": "Single Property Fetched Successfully!",
+            "data": convert_objectid(property_data)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
